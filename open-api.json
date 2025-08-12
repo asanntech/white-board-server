@@ -41,7 +41,7 @@
             }
           },
           "401": {
-            "description": ""
+            "description": "Unauthorized"
           }
         },
         "summary": "Verify Token",
