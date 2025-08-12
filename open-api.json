@@ -1,20 +1,6 @@
 {
   "openapi": "3.0.0",
   "paths": {
-    "/": {
-      "get": {
-        "operationId": "getHello",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Get Hello"
-        ]
-      }
-    },
     "/verify": {
       "post": {
         "operationId": "verify",
@@ -41,7 +27,7 @@
             }
           },
           "401": {
-            "description": ""
+            "description": "Unauthorized"
           }
         },
         "summary": "Verify Token",
