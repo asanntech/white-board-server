@@ -1,6 +1,6 @@
 import { Controller, Get, UseGuards } from '@nestjs/common'
 import { AppService } from './app.service'
-import { AuthService } from './auth/auth.service'
+import { AuthGuard } from './auth/auth.guard'
 import { ApiTags } from '@nestjs/swagger'
 
 @ApiTags('Get Hello')
@@ -9,7 +9,7 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get()
-  @UseGuards(AuthService)
+  @UseGuards(AuthGuard)
   // @ApiOperation({ summary: 'Get Hello' })
   getHello(): string {
     return this.appService.getHello()
