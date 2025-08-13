@@ -18,11 +18,11 @@ export class AuthController {
     @Req() request: Request,
     @Body() authVerifyDto: AuthVerifyRequestDto
   ): Promise<AuthVerifyResponseDto> {
-    await this.authService.validateToken(request)
-
     if (!authVerifyDto.idToken) {
       throw new UnauthorizedException('No valid token provided')
     }
+
+    await this.authService.validateToken(request)
 
     const payload = await this.authService.verifyToken(authVerifyDto.idToken)
     return new AuthVerifyResponseDto(payload)
