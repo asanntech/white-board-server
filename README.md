@@ -1,12 +1,10 @@
-## Description
-
-## Project setup
+## セットアップ
 
 ```bash
 $ pnpm install
 ```
 
-## Compile and run the project
+## アプリ起動
 
 ```bash
 # development
@@ -19,7 +17,7 @@ $ pnpm run start:dev
 $ pnpm run start:prod
 ```
 
-## Run tests
+## テスト実行
 
 ```bash
 # unit tests
@@ -38,4 +36,17 @@ open-api.jsonを出力
 
 ```bash
 $ pnpm generate-api
+```
+
+## マイグレーションの実行
+
+```bash
+# development
+$ npx prisma migrate dev --name <変更名>
+
+# production
+$ npx prisma migrate deploy --name <変更名>
+
+# Prisma Client
+ $ npx prisma generate
 ```
