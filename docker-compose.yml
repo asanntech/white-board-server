@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: unispace-db
+    restart: unless-stopped
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: Vp2hPj8Z
+      POSTGRES_DB: unispace
+      TZ: Asia/Tokyo
+      PGTZ: Asia/Tokyo
+    volumes:
+      - unispace-db:/var/lib/postgresql/data
+
+volumes:
+  unispace-db:
