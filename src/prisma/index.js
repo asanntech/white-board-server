@@ -127,7 +127,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "/Users/asanoyuuki/dev/white-board-server/src/prisma",
+      "value": "/Users/asanoyuuki/dev/unispace-server/src/prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -141,7 +141,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "/Users/asanoyuuki/dev/white-board-server/prisma/schema.prisma",
+    "sourceFilePath": "/Users/asanoyuuki/dev/unispace-server/prisma/schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
@@ -155,6 +155,7 @@ const config = {
     "db"
   ],
   "activeProvider": "postgresql",
+  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {
