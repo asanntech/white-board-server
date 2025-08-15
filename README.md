@@ -2,6 +2,9 @@
 
 ```bash
 $ pnpm install
+
+# Generate Prisma Client
+$ pnpm prisma:generate
 ```
 
 ## アプリ起動
@@ -46,7 +49,4 @@ $ npx prisma migrate dev --name <変更名>
 
 # production
 $ npx prisma migrate deploy --name <変更名>
-
-# Prisma Client
- $ npx prisma generate
 ```
