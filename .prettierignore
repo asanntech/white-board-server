@@ -4,4 +4,4 @@ out
 dist
 .pnpm-store
 pnpm-lock.yaml
-prisma/client
+src/prisma/client
