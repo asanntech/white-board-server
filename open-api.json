@@ -68,6 +68,21 @@
             "description": "ユーザーID",
             "example": "abc123"
           },
+          "lastName": {
+            "type": "string",
+            "description": "姓",
+            "example": "山田"
+          },
+          "firstName": {
+            "type": "string",
+            "description": "名",
+            "example": "太郎"
+          },
+          "email": {
+            "type": "string",
+            "description": "メールアドレス",
+            "example": "yamada.taro@example.com"
+          },
           "exp": {
             "type": "number",
             "description": "有効期限",
@@ -81,6 +96,9 @@
         },
         "required": [
           "sub",
+          "lastName",
+          "firstName",
+          "email",
           "exp",
           "iat"
         ]
