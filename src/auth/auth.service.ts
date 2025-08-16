@@ -2,12 +2,14 @@ import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/
 import * as jwt from 'jsonwebtoken'
 import * as jwksClient from 'jwks-rsa'
 import { Request } from 'express'
+import { AuthVerifyResponseDto } from './auth.dto'
+import { UserService } from '@/user/user.service'
 
 @Injectable()
 export class AuthService {
   private client: jwksClient.JwksClient
 
-  constructor() {
+  constructor(private readonly userService: UserService) {
     this.client = jwksClient({
       jwksUri: `${process.env.COGNITO_ISSUER}/.well-known/jwks.json`,
       cache: true,
@@ -53,5 +55,22 @@ export class AuthService {
     const token = this.extractToken(request)
     if (!token) throw new UnauthorizedException('Token not found')
     return await this.verifyToken(token)
+  }
+
+  async verifyAndUpsertUser(idToken: string): Promise<AuthVerifyResponseDto> {
+    const payload = await this.verifyToken(idToken)
+    const authInfo = new AuthVerifyResponseDto(payload)
+
+    const user = await this.userService.findById(authInfo.sub)
+    if (!user) {
+      await this.userService.create({
+        id: authInfo.sub,
+        firstName: authInfo.firstName,
+        lastName: authInfo.lastName,
+        email: authInfo.email,
+      })
+    }
+
+    return authInfo
   }
 }

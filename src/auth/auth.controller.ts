@@ -24,7 +24,8 @@ export class AuthController {
 
     await this.authService.validateToken(request)
 
-    const payload = await this.authService.verifyToken(authVerifyDto.idToken)
-    return new AuthVerifyResponseDto(payload)
+    const authInfo = await this.authService.verifyAndUpsertUser(authVerifyDto.idToken)
+
+    return authInfo
   }
 }

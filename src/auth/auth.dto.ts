@@ -9,12 +9,24 @@ export class AuthVerifyRequestDto {
 export class AuthVerifyResponseDto {
   constructor(payload: jwt.JwtPayload) {
     this.sub = payload.sub as string
+    this.lastName = payload.family_name as string
+    this.firstName = payload.given_name as string
+    this.email = payload.email as string
     this.exp = payload.exp as number
     this.iat = payload.iat as number
   }
 
   @ApiProperty({ description: 'ユーザーID', example: 'abc123' })
   sub: string
+
+  @ApiProperty({ description: '姓', example: '山田' })
+  lastName: string
+
+  @ApiProperty({ description: '名', example: '太郎' })
+  firstName: string
+
+  @ApiProperty({ description: 'メールアドレス', example: 'yamada.taro@example.com' })
+  email: string
 
   @ApiProperty({ description: '有効期限', example: 1717987200 })
   exp: number
