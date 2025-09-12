@@ -1,18 +1,18 @@
 services:
   postgres:
     image: postgres:17
-    container_name: unispace-db
+    container_name: white-board-db
     restart: unless-stopped
     ports:
       - '5432:5432'
     environment:
       POSTGRES_USER: dev
       POSTGRES_PASSWORD: Vp2hPj8Z
-      POSTGRES_DB: unispace
+      POSTGRES_DB: white-board
       TZ: Asia/Tokyo
       PGTZ: Asia/Tokyo
     volumes:
-      - unispace-db:/var/lib/postgresql/data
+      - white-board-db:/var/lib/postgresql/data
 
 volumes:
-  unispace-db:
+  white-board-db:
