@@ -3,8 +3,7 @@
 ```bash
 $ pnpm install
 
-# Generate Prisma Client
-$ pnpm prisma:generate
+$ pnpm prisma migrate dev
 ```
 
 ## アプリ起動
@@ -45,8 +44,8 @@ $ pnpm generate-api
 
 ```bash
 # development
-$ npx prisma migrate dev --name <変更名>
+$ pnpm prisma migrate dev --name <変更名>
 
 # production
-$ npx prisma migrate deploy --name <変更名>
+$ pnpm prisma migrate deploy --name <変更名>
 ```
