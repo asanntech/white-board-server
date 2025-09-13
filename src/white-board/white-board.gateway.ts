@@ -1,8 +1,11 @@
+import { UseGuards } from '@nestjs/common'
 import { SubscribeMessage, WebSocketGateway } from '@nestjs/websockets'
 import { Socket } from 'socket.io'
 import { DrawingData } from './drawing.types'
+import { AuthGuard } from '../auth/auth.guard'
 
 @WebSocketGateway({ namespace: 'white-board' })
+@UseGuards(AuthGuard)
 export class WhiteBoardGateway {
   @SubscribeMessage('message')
   handleMessage(client: Socket, payload: any): string {
