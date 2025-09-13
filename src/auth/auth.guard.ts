@@ -36,12 +36,11 @@ export class AuthGuard implements CanActivate {
     try {
       const client: Socket = context.switchToWs().getClient()
       const auth = client.handshake.auth
-
       if (!auth.token) {
         throw new WsException('認証トークンが提供されていません')
       }
 
-      const payload = await this.authService.validateTokenFromString(auth.token as string)
+      const payload = await this.authService.verifyToken(auth.token as string)
       if (!payload) {
         throw new WsException('無効な認証トークンです')
       }
