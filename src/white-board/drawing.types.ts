@@ -5,8 +5,6 @@ export interface DrawingData {
   points: number[]
   stroke: string
   strokeWidth: number
-  lineCap: string
-  lineJoin: string
   x?: number
   y?: number
   rotation?: number
