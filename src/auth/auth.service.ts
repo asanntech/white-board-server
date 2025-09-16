@@ -3,7 +3,7 @@ import * as jwt from 'jsonwebtoken'
 import * as jwksClient from 'jwks-rsa'
 import { Request } from 'express'
 import { AuthVerifyResponseDto } from './auth.dto'
-import { UserService } from '@/user/user.service'
+import { UserService } from '../user/user.service'
 
 @Injectable()
 export class AuthService {
@@ -61,10 +61,10 @@ export class AuthService {
     const payload = await this.verifyToken(idToken)
     const authInfo = new AuthVerifyResponseDto(payload)
 
-    const user = await this.userService.findById(authInfo.sub)
+    const user = await this.userService.findById(authInfo.id)
     if (!user) {
       await this.userService.create({
-        id: authInfo.sub,
+        id: authInfo.id,
         firstName: authInfo.firstName,
         lastName: authInfo.lastName,
         email: authInfo.email,

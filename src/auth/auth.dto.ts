@@ -8,7 +8,7 @@ export class AuthVerifyRequestDto {
 
 export class AuthVerifyResponseDto {
   constructor(payload: jwt.JwtPayload) {
-    this.sub = payload.sub as string
+    this.id = payload.sub as string
     this.lastName = payload.family_name as string
     this.firstName = payload.given_name as string
     this.email = payload.email as string
@@ -17,7 +17,7 @@ export class AuthVerifyResponseDto {
   }
 
   @ApiProperty({ description: 'ユーザーID', example: 'abc123' })
-  sub: string
+  id: string
 
   @ApiProperty({ description: '姓', example: '山田' })
   lastName: string

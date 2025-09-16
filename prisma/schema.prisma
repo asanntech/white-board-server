@@ -21,5 +21,37 @@ model User {
   createdAt DateTime @db.Timestamptz() @default(now())  @map("created_at")
   updatedAt DateTime @db.Timestamptz() @updatedAt @map("updated_at")
 
+  // Relations
+  createdRooms Room[] @relation("RoomCreator")
+  roomParticipants RoomParticipant[]
+
   @@map("users")
+}
+
+model Room {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(255)
+  createdBy   String   @db.VarChar(64) @map("created_by")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @db.Timestamptz() @default(now()) @map("created_at")
+  updatedAt   DateTime @db.Timestamptz() @updatedAt @map("updated_at")
+
+  // Relations
+  creator User @relation("RoomCreator", fields: [createdBy], references: [id])
+  participants RoomParticipant[]
+
+  @@map("rooms")
+}
+
+model RoomParticipant {
+  roomId   String @db.Uuid @map("room_id")
+  userId   String @db.VarChar(64) @map("user_id")
+  joinedAt DateTime @db.Timestamptz() @default(now()) @map("joined_at")
+
+  // Relations
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([roomId, userId])
+  @@map("room_participants")
 }
