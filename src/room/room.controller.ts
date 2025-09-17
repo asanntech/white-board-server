@@ -20,7 +20,7 @@ export class RoomController {
     description: 'Bad request',
   })
   async createRoom(@Body() createRoomDto: CreateRoomDto) {
-    const room = await this.roomService.createRoom(createRoomDto)
+    const room = await this.roomService.create(createRoomDto)
     return {
       success: true,
       data: room,

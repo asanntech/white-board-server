@@ -11,6 +11,9 @@ export class UserService {
   }
 
   async findById(id: string) {
-    return await this.prisma.user.findUnique({ where: { id } })
+    return await this.prisma.user.findUnique({
+      where: { id },
+      include: { createdRooms: true, roomParticipants: true },
+    })
   }
 }
