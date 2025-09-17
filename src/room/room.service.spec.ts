@@ -52,7 +52,7 @@ describe('RoomService', () => {
 
       mockPrismaService.room.create.mockResolvedValue(mockRoom)
 
-      const result = await service.createRoom(createRoomDto)
+      const result = await service.create(createRoomDto)
 
       expect(mockPrismaService.room.create).toHaveBeenCalledWith({
         data: {
@@ -72,7 +72,7 @@ describe('RoomService', () => {
       const error = new Error('Database connection failed')
       mockPrismaService.room.create.mockRejectedValue(error)
 
-      await expect(service.createRoom(createRoomDto)).rejects.toThrow('Database connection failed')
+      await expect(service.create(createRoomDto)).rejects.toThrow('Database connection failed')
       expect(mockPrismaService.room.create).toHaveBeenCalledWith({
         data: {
           name: 'Test Room',
@@ -98,7 +98,7 @@ describe('RoomService', () => {
 
       mockPrismaService.room.create.mockResolvedValue(mockRoom)
 
-      const result = await service.createRoom(createRoomDto)
+      const result = await service.create(createRoomDto)
 
       expect(mockPrismaService.room.create).toHaveBeenCalledWith({
         data: {
