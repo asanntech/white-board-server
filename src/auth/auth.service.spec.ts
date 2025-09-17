@@ -3,6 +3,7 @@ import * as jwt from 'jsonwebtoken'
 import * as jwksClient from 'jwks-rsa'
 import { UserService } from '@/user/user.service'
 import { PrismaService } from '@/prisma/prisma.service'
+import { RoomService } from '@/room/room.service'
 
 jest.mock('jsonwebtoken')
 jest.mock('jwks-rsa')
@@ -23,7 +24,7 @@ describe('AuthService', () => {
       getSigningKey: mockGetSigningKey,
     })
 
-    service = new AuthService(new UserService(new PrismaService()))
+    service = new AuthService(new UserService(new PrismaService()), new RoomService(new PrismaService()))
 
     jest.clearAllMocks()
   })
