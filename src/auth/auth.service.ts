@@ -4,12 +4,16 @@ import * as jwksClient from 'jwks-rsa'
 import { Request } from 'express'
 import { AuthVerifyResponseDto } from './auth.dto'
 import { UserService } from '../user/user.service'
+import { RoomService } from '../room/room.service'
 
 @Injectable()
 export class AuthService {
   private client: jwksClient.JwksClient
 
-  constructor(private readonly userService: UserService) {
+  constructor(
+    private readonly userService: UserService,
+    private readonly roomService: RoomService
+  ) {
     this.client = jwksClient({
       jwksUri: `${process.env.COGNITO_ISSUER}/.well-known/jwks.json`,
       cache: true,
@@ -61,14 +65,25 @@ export class AuthService {
     const payload = await this.verifyToken(idToken)
     const authInfo = new AuthVerifyResponseDto(payload)
 
-    const user = await this.userService.findById(authInfo.id)
-    if (!user) {
+    const user = await this.userService.findById(authInfo.userId)
+
+    if (user) {
+      // ユーザーが作成したルームがある場合はそれを使用
+      authInfo.roomId = user.createdRooms[0].id
+    } else {
+      // ユーザーが作成したルームがない場合は新規作成
       await this.userService.create({
-        id: authInfo.id,
+        id: authInfo.userId,
         firstName: authInfo.firstName,
         lastName: authInfo.lastName,
         email: authInfo.email,
       })
+
+      const room = await this.roomService.create({
+        name: 'My Room',
+        createdBy: authInfo.userId,
+      })
+      authInfo.roomId = room.id
     }
 
     return authInfo
