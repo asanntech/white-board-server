@@ -6,11 +6,7 @@ import { CreateRoomDto } from './room.dto'
 export class RoomService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createRoom(createRoomDto: CreateRoomDto) {
-    const { name, createdBy } = createRoomDto
-
-    const room = await this.prisma.room.create({ data: { name, createdBy } })
-
-    return room
+  async create(room: CreateRoomDto) {
+    return await this.prisma.room.create({ data: room })
   }
 }
