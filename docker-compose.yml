@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:17
-    container_name: white-board-db
+    container_name: white-board-postgres
     restart: unless-stopped
     ports:
       - '5432:5432'
@@ -12,7 +12,16 @@ services:
       TZ: Asia/Tokyo
       PGTZ: Asia/Tokyo
     volumes:
-      - white-board-db:/var/lib/postgresql/data
+      - white-board-postgres:/var/lib/postgresql/data
 
+  dynamodb:
+    image: amazon/dynamodb-local:latest
+    container_name: white-board-dynamodb
+    ports:
+      - '8000:8000'
+    command: '-jar DynamoDBLocal.jar -sharedDb -dbPath ./data'
+    volumes:
+      - './dynamodb:/home/dynamodblocal/data'
+    working_dir: /home/dynamodblocal
 volumes:
-  white-board-db:
+  white-board-postgres:
