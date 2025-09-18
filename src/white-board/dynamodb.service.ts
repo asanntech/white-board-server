@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { DynamoDBDocumentClient, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb'
 import { v4 as uuid } from 'uuid'
-import { Drawing, DrawingRecord } from './drawing.types'
+import { Drawing, DrawingRecord, Transform } from './drawing.types'
 
 @Injectable()
 export class DynamoDBService {
@@ -114,6 +114,84 @@ export class DynamoDBService {
 
   async deleteDrawings(roomId: string, drawingIds: string[]): Promise<void> {
     const promises = drawingIds.map((drawingId) => this.deleteDrawing(roomId, drawingId))
+    await Promise.all(promises)
+  }
+
+  async updateDrawingTransform(
+    roomId: string,
+    drawingId: string,
+    transformData: Partial<Transform>
+  ): Promise<void> {
+    const updateExpressionParts: string[] = []
+    const expressionAttributeValues: Record<string, any> = {
+      ':updated_at': new Date().toISOString(),
+    }
+
+    // 各変形パラメータを動的に追加
+    if (transformData.x !== undefined) {
+      updateExpressionParts.push('x = :x')
+      expressionAttributeValues[':x'] = transformData.x
+    }
+    if (transformData.y !== undefined) {
+      updateExpressionParts.push('y = :y')
+      expressionAttributeValues[':y'] = transformData.y
+    }
+    if (transformData.rotation !== undefined) {
+      updateExpressionParts.push('rotation = :rotation')
+      expressionAttributeValues[':rotation'] = transformData.rotation
+    }
+    if (transformData.scaleX !== undefined) {
+      updateExpressionParts.push('scale_x = :scale_x')
+      expressionAttributeValues[':scale_x'] = transformData.scaleX
+    }
+    if (transformData.scaleY !== undefined) {
+      updateExpressionParts.push('scale_y = :scale_y')
+      expressionAttributeValues[':scale_y'] = transformData.scaleY
+    }
+    if (transformData.skewX !== undefined) {
+      updateExpressionParts.push('skew_x = :skew_x')
+      expressionAttributeValues[':skew_x'] = transformData.skewX
+    }
+    if (transformData.skewY !== undefined) {
+      updateExpressionParts.push('skew_y = :skew_y')
+      expressionAttributeValues[':skew_y'] = transformData.skewY
+    }
+
+    // updated_atは常に更新
+    updateExpressionParts.push('updated_at = :updated_at')
+
+    if (updateExpressionParts.length === 0) {
+      return // 更新する項目がない場合は何もしない
+    }
+
+    await this.client.send(
+      new UpdateCommand({
+        TableName: this.tableName,
+        Key: {
+          room_id: roomId,
+          drawing_id: drawingId,
+        },
+        UpdateExpression: `SET ${updateExpressionParts.join(', ')}`,
+        ExpressionAttributeValues: expressionAttributeValues,
+      })
+    )
+  }
+
+  async updateDrawingsTransform(roomId: string, drawings: Drawing[]): Promise<void> {
+    const promises = drawings.map((drawing) => {
+      if (!drawing.id) {
+        throw new Error('Drawing ID is required for transform update')
+      }
+      return this.updateDrawingTransform(roomId, drawing.id, {
+        x: drawing.x,
+        y: drawing.y,
+        rotation: drawing.rotation,
+        scaleX: drawing.scaleX,
+        scaleY: drawing.scaleY,
+        skewX: drawing.skewX,
+        skewY: drawing.skewY,
+      })
+    })
     await Promise.all(promises)
   }
 }
