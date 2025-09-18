@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
-import { DynamoDBDocumentClient, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
+import { DynamoDBDocumentClient, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb'
 import { v4 as uuid } from 'uuid'
 import { Drawing, DrawingRecord } from './drawing.types'
 
@@ -92,5 +92,28 @@ export class DynamoDBService {
     const items = (result.Items || []) as DrawingRecord[]
 
     return items.filter((item) => !item.is_deleted).map((item) => this.convertFromDynamoDB(item))
+  }
+
+  async deleteDrawing(roomId: string, drawingId: string): Promise<void> {
+    await this.client.send(
+      new UpdateCommand({
+        TableName: this.tableName,
+        Key: {
+          room_id: roomId,
+          drawing_id: drawingId,
+        },
+        UpdateExpression: 'SET is_deleted = :is_deleted, updated_at = :updated_at, deleted_at = :deleted_at',
+        ExpressionAttributeValues: {
+          ':is_deleted': true,
+          ':updated_at': new Date().toISOString(),
+          ':deleted_at': new Date().toISOString(),
+        },
+      })
+    )
+  }
+
+  async deleteDrawings(roomId: string, drawingIds: string[]): Promise<void> {
+    const promises = drawingIds.map((drawingId) => this.deleteDrawing(roomId, drawingId))
+    await Promise.all(promises)
   }
 }

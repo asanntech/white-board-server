@@ -57,8 +57,16 @@ export class WhiteBoardGateway {
   }
 
   @SubscribeMessage('remove')
-  handleRemove(client: Socket, params: { roomId: string; ids: string[] }): void {
-    client.to(params.roomId).emit('remove', params.ids)
+  async handleRemove(client: Socket, params: { roomId: string; ids: string[] }): Promise<void> {
+    try {
+      // DynamoDBでis_deletedフラグをtrueに更新
+      await this.dynamoDBService.deleteDrawings(params.roomId, params.ids)
+
+      // 他のクライアントに削除を通知
+      client.to(params.roomId).emit('remove', params.ids)
+    } catch (error) {
+      console.error('Failed to delete drawings from DynamoDB:', error)
+    }
   }
 
   @SubscribeMessage('undo')
