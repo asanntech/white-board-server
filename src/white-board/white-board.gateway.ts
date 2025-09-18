@@ -44,15 +44,14 @@ export class WhiteBoardGateway {
 
   @SubscribeMessage('transform')
   async handleTransform(client: Socket, params: { roomId: string; drawings: Drawing[] }): Promise<void> {
-    console.log('Received transform data:', params.drawings)
-
     try {
-      // DynamoDBに保存
-      await this.dynamoDBService.saveDrawings(params.roomId, params.drawings)
+      // DynamoDBで変形パラメータを更新
+      await this.dynamoDBService.updateDrawingsTransform(params.roomId, params.drawings)
     } catch (error) {
-      console.error('Failed to save transform data to DynamoDB:', error)
+      console.error('Failed to update transform data in DynamoDB:', error)
     }
 
+    // 他のクライアントに変形を通知
     client.to(params.roomId).emit('transform', params.drawings)
   }
 
