@@ -1,5 +1,5 @@
 // 描画データの型定義
-export interface Drawing {
+export type Drawing = {
   id: string
   type: string
   points: number[]
@@ -12,6 +12,17 @@ export interface Drawing {
   scaleY?: number
   skewX?: number
   skewY?: number
+} & Partial<Transform>
+
+// 変形データの型定義
+export type Transform = {
+  x: number
+  y: number
+  rotation: number
+  scaleX: number
+  scaleY: number
+  skewX: number
+  skewY: number
 }
 
 // DynamoDBに保存するための型定義
