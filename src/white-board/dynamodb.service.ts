@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { DynamoDBDocumentClient, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb'
 import { v4 as uuid } from 'uuid'
-import { Drawing, DrawingRecord, Transform } from './drawing.types'
+import { Drawing, DrawingRecord, UndoRedoResult } from './drawing.types'
 
 @Injectable()
 export class DynamoDBService {
@@ -117,80 +117,120 @@ export class DynamoDBService {
     await Promise.all(promises)
   }
 
-  async updateDrawingTransform(
-    roomId: string,
-    drawingId: string,
-    transformData: Partial<Transform>
-  ): Promise<void> {
-    const updateExpressionParts: string[] = []
+  async updateDrawing(roomId: string, undoRedoResult: UndoRedoResult): Promise<void> {
+    const promises = undoRedoResult.objects.map(async (drawing) => {
+      if (!drawing.id) {
+        throw new Error('Drawing ID is required for update')
+      }
+
+      switch (undoRedoResult.action) {
+        case 'delete':
+          return this.updateDrawingForDelete(roomId, drawing)
+        case 'restore':
+          return this.updateDrawingForRestore(roomId, drawing)
+        case 'transform':
+          return this.updateDrawingForTransform(roomId, drawing)
+        default:
+          throw new Error(`Unknown action: ${undoRedoResult.action as string}`)
+      }
+    })
+
+    await Promise.all(promises)
+  }
+
+  private async updateDrawingForDelete(roomId: string, drawing: Drawing): Promise<void> {
+    await this.client.send(
+      new UpdateCommand({
+        TableName: this.tableName,
+        Key: {
+          room_id: roomId,
+          drawing_id: drawing.id,
+        },
+        UpdateExpression: 'SET is_deleted = :is_deleted, updated_at = :updated_at, deleted_at = :deleted_at',
+        ExpressionAttributeValues: {
+          ':is_deleted': true,
+          ':updated_at': new Date().toISOString(),
+          ':deleted_at': new Date().toISOString(),
+        },
+      })
+    )
+  }
+
+  private async updateDrawingForRestore(roomId: string, drawing: Drawing): Promise<void> {
+    await this.client.send(
+      new UpdateCommand({
+        TableName: this.tableName,
+        Key: {
+          room_id: roomId,
+          drawing_id: drawing.id,
+        },
+        UpdateExpression: 'SET is_deleted = :is_deleted, updated_at = :updated_at, deleted_at = :deleted_at',
+        ExpressionAttributeValues: {
+          ':is_deleted': false,
+          ':updated_at': new Date().toISOString(),
+          ':deleted_at': null,
+        },
+      })
+    )
+  }
+
+  private async updateDrawingForTransform(roomId: string, drawing: Drawing): Promise<void> {
+    const updateExpressionParts: string[] = [
+      '#type = :type',
+      'points = :points',
+      'stroke = :stroke',
+      'stroke_width = :stroke_width',
+      'x = :x',
+      'y = :y',
+      'rotation = :rotation',
+      'scale_x = :scale_x',
+      'scale_y = :scale_y',
+      'skew_x = :skew_x',
+      'skew_y = :skew_y',
+      'updated_at = :updated_at',
+    ]
+
+    const expressionAttributeNames: Record<string, string> = {
+      '#type': 'type',
+    }
+
     const expressionAttributeValues: Record<string, any> = {
+      ':type': drawing.type,
+      ':points': drawing.points,
+      ':stroke': drawing.stroke,
+      ':stroke_width': drawing.strokeWidth,
+      ':x': drawing.x ?? null,
+      ':y': drawing.y ?? null,
+      ':rotation': drawing.rotation ?? null,
+      ':scale_x': drawing.scaleX ?? null,
+      ':scale_y': drawing.scaleY ?? null,
+      ':skew_x': drawing.skewX ?? null,
+      ':skew_y': drawing.skewY ?? null,
       ':updated_at': new Date().toISOString(),
     }
 
-    // 各変形パラメータを動的に追加
-    if (transformData.x !== undefined) {
-      updateExpressionParts.push('x = :x')
-      expressionAttributeValues[':x'] = transformData.x
-    }
-    if (transformData.y !== undefined) {
-      updateExpressionParts.push('y = :y')
-      expressionAttributeValues[':y'] = transformData.y
-    }
-    if (transformData.rotation !== undefined) {
-      updateExpressionParts.push('rotation = :rotation')
-      expressionAttributeValues[':rotation'] = transformData.rotation
-    }
-    if (transformData.scaleX !== undefined) {
-      updateExpressionParts.push('scale_x = :scale_x')
-      expressionAttributeValues[':scale_x'] = transformData.scaleX
-    }
-    if (transformData.scaleY !== undefined) {
-      updateExpressionParts.push('scale_y = :scale_y')
-      expressionAttributeValues[':scale_y'] = transformData.scaleY
-    }
-    if (transformData.skewX !== undefined) {
-      updateExpressionParts.push('skew_x = :skew_x')
-      expressionAttributeValues[':skew_x'] = transformData.skewX
-    }
-    if (transformData.skewY !== undefined) {
-      updateExpressionParts.push('skew_y = :skew_y')
-      expressionAttributeValues[':skew_y'] = transformData.skewY
-    }
-
-    // updated_atは常に更新
-    updateExpressionParts.push('updated_at = :updated_at')
-
-    if (updateExpressionParts.length === 0) {
-      return // 更新する項目がない場合は何もしない
-    }
+    console.log({ expressionAttributeValues })
 
     await this.client.send(
       new UpdateCommand({
         TableName: this.tableName,
         Key: {
           room_id: roomId,
-          drawing_id: drawingId,
+          drawing_id: drawing.id,
         },
         UpdateExpression: `SET ${updateExpressionParts.join(', ')}`,
+        ExpressionAttributeNames: expressionAttributeNames,
         ExpressionAttributeValues: expressionAttributeValues,
       })
     )
   }
 
-  async updateDrawingsTransform(roomId: string, drawings: Drawing[]): Promise<void> {
-    const promises = drawings.map((drawing) => {
+  async updateDrawings(roomId: string, drawings: Drawing[]): Promise<void> {
+    const promises = drawings.map(async (drawing) => {
       if (!drawing.id) {
-        throw new Error('Drawing ID is required for transform update')
+        throw new Error('Drawing ID is required for update')
       }
-      return this.updateDrawingTransform(roomId, drawing.id, {
-        x: drawing.x,
-        y: drawing.y,
-        rotation: drawing.rotation,
-        scaleX: drawing.scaleX,
-        scaleY: drawing.scaleY,
-        skewX: drawing.skewX,
-        skewY: drawing.skewY,
-      })
+      return this.updateDrawingForTransform(roomId, drawing)
     })
     await Promise.all(promises)
   }
