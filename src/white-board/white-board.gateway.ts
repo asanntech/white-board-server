@@ -1,7 +1,7 @@
 import { UseGuards } from '@nestjs/common'
 import { SubscribeMessage, WebSocketGateway } from '@nestjs/websockets'
 import { Socket } from 'socket.io'
-import { Drawing } from './drawing.types'
+import { Drawing, UndoRedoResult } from './drawing.types'
 import { AuthGuard } from '../auth/auth.guard'
 import { DynamoDBService } from './dynamodb.service'
 
@@ -45,8 +45,8 @@ export class WhiteBoardGateway {
   @SubscribeMessage('transform')
   async handleTransform(client: Socket, params: { roomId: string; drawings: Drawing[] }): Promise<void> {
     try {
-      // DynamoDBで変形パラメータを更新
-      await this.dynamoDBService.updateDrawingsTransform(params.roomId, params.drawings)
+      // DynamoDBで描画データを更新
+      await this.dynamoDBService.updateDrawings(params.roomId, params.drawings)
     } catch (error) {
       console.error('Failed to update transform data in DynamoDB:', error)
     }
@@ -69,12 +69,33 @@ export class WhiteBoardGateway {
   }
 
   @SubscribeMessage('undo')
-  handleUndo(client: Socket, params: { roomId: string; ids: string[] }): void {
-    client.to(params.roomId).emit('undo', params.ids)
+  async handleUndo(
+    client: Socket,
+    params: { roomId: string; undoRedoResult: UndoRedoResult }
+  ): Promise<void> {
+    try {
+      console.log('handleUndo', params.undoRedoResult)
+      await this.dynamoDBService.updateDrawing(params.roomId, params.undoRedoResult)
+    } catch (error) {
+      console.error('Failed to undo drawings in DynamoDB:', error)
+    }
+
+    // 他のクライアントにundoを通知
+    client.to(params.roomId).emit('undoDrawings', params.undoRedoResult)
   }
 
   @SubscribeMessage('redo')
-  handleRedo(client: Socket, params: { roomId: string; drawings: Drawing[] }): void {
-    client.to(params.roomId).emit('redo', params.drawings)
+  async handleRedo(
+    client: Socket,
+    params: { roomId: string; undoRedoResult: UndoRedoResult }
+  ): Promise<void> {
+    try {
+      await this.dynamoDBService.updateDrawing(params.roomId, params.undoRedoResult)
+    } catch (error) {
+      console.error('Failed to redo drawings in DynamoDB:', error)
+    }
+
+    // 他のクライアントにundoを通知
+    client.to(params.roomId).emit('redoDrawings', params.undoRedoResult)
   }
 }
