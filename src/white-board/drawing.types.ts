@@ -12,17 +12,12 @@ export type Drawing = {
   scaleY?: number
   skewX?: number
   skewY?: number
-} & Partial<Transform>
+}
 
-// 変形データの型定義
-export type Transform = {
-  x: number
-  y: number
-  rotation: number
-  scaleX: number
-  scaleY: number
-  skewX: number
-  skewY: number
+// UndoRedoの結果の型定義
+export type UndoRedoResult = {
+  action: 'delete' | 'restore' | 'transform'
+  objects: Drawing[]
 }
 
 // DynamoDBに保存するための型定義
