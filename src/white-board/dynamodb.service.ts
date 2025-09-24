@@ -37,6 +37,9 @@ export class DynamoDBService {
       scale_y: drawing.scaleY,
       skew_x: drawing.skewX,
       skew_y: drawing.skewY,
+      line_cap: drawing.lineCap,
+      line_join: drawing.lineJoin,
+      opacity: drawing.opacity,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       is_deleted: false,
@@ -57,6 +60,9 @@ export class DynamoDBService {
       scaleY: item.scale_y,
       skewX: item.skew_x,
       skewY: item.skew_y,
+      lineCap: item.line_cap,
+      lineJoin: item.line_join,
+      opacity: item.opacity,
     }
   }
 
@@ -187,6 +193,9 @@ export class DynamoDBService {
       'scale_y = :scale_y',
       'skew_x = :skew_x',
       'skew_y = :skew_y',
+      'line_cap = :line_cap',
+      'line_join = :line_join',
+      'opacity = :opacity',
       'updated_at = :updated_at',
     ]
 
@@ -206,6 +215,9 @@ export class DynamoDBService {
       ':scale_y': drawing.scaleY ?? null,
       ':skew_x': drawing.skewX ?? null,
       ':skew_y': drawing.skewY ?? null,
+      ':line_cap': drawing.lineCap ?? null,
+      ':line_join': drawing.lineJoin ?? null,
+      ':opacity': drawing.opacity ?? null,
       ':updated_at': new Date().toISOString(),
     }
 
