@@ -12,7 +12,6 @@ export class WhiteBoardGateway {
 
   @SubscribeMessage('join')
   async handleJoin(client: Socket, params: { roomId: string }): Promise<void> {
-    console.log('Received join request for room:', params.roomId)
     await client.join(params.roomId)
 
     try {
@@ -74,7 +73,6 @@ export class WhiteBoardGateway {
     params: { roomId: string; undoRedoResult: UndoRedoResult }
   ): Promise<void> {
     try {
-      console.log('handleUndo', params.undoRedoResult)
       await this.dynamoDBService.updateDrawing(params.roomId, params.undoRedoResult)
     } catch (error) {
       console.error('Failed to undo drawings in DynamoDB:', error)
