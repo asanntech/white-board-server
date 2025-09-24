@@ -12,6 +12,9 @@ export type Drawing = {
   scaleY?: number
   skewX?: number
   skewY?: number
+  lineCap?: string
+  lineJoin?: string
+  opacity?: number
 }
 
 // UndoRedoの結果の型定義
@@ -35,6 +38,9 @@ export interface DrawingRecord {
   scale_y?: number
   skew_x?: number
   skew_y?: number
+  line_cap?: string
+  line_join?: string
+  opacity?: number
   created_at: string
   updated_at: string
   deleted_at?: string
