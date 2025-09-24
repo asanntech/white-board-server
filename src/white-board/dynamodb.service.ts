@@ -221,8 +221,6 @@ export class DynamoDBService {
       ':updated_at': new Date().toISOString(),
     }
 
-    console.log({ expressionAttributeValues })
-
     await this.client.send(
       new UpdateCommand({
         TableName: this.tableName,
