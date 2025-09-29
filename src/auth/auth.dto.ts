@@ -10,7 +10,7 @@ export class AuthVerifyResponseDto {
   constructor(payload: jwt.JwtPayload) {
     this.userId = payload.sub as string
     this.roomId = payload.room_id as string
-    this.lastName = payload.family_name as string
+    this.lastName = (payload.family_name as string | undefined) ?? ''
     this.firstName = payload.given_name as string
     this.email = payload.email as string
     this.exp = payload.exp as number
