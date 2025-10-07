@@ -4,7 +4,7 @@ services:
     container_name: white-board-postgres
     restart: unless-stopped
     ports:
-      - '5432:5432'
+      - "5432:5432"
     environment:
       POSTGRES_USER: dev
       POSTGRES_PASSWORD: Vp2hPj8Z
@@ -18,10 +18,21 @@ services:
     image: amazon/dynamodb-local:latest
     container_name: white-board-dynamodb
     ports:
-      - '8000:8000'
-    command: '-jar DynamoDBLocal.jar -sharedDb -dbPath ./data'
+      - "8000:8000"
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
     volumes:
-      - './dynamodb:/home/dynamodblocal/data'
+      - "./dynamodb:/home/dynamodblocal/data"
     working_dir: /home/dynamodblocal
+
+  redis:
+    image: redis:7-alpine
+    container_name: white-board-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --appendfsync everysec # 1秒に1回ディスクに書き込む
+    volumes:
+      - white-board-redis:/data
 volumes:
   white-board-postgres:
+  white-board-redis:
