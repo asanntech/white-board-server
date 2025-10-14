@@ -4,7 +4,6 @@
 FROM public.ecr.aws/docker/library/node:22-alpine AS builder
 
 ARG ENVIRONMENT
-ARG SENTRY_AUTH_TOKEN
 
 ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
@@ -17,6 +16,7 @@ COPY pnpm-lock.yaml package.json ./
 RUN pnpm install --frozen-lockfile
 
 # Generate Prisma client
+COPY prisma ./prisma
 RUN pnpm prisma generate
 
 # Copy source and build
