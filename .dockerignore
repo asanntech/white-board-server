@@ -1,0 +1,22 @@
+node_modules
+dist
+coverage
+
+.git
+.gitignore
+.DS_Store
+*.log
+
+# Prisma caches
+.prisma
+
+# Local DBs and snapshots
+dynamodb/
+prisma/migrations/*/snapshot-*
+
+# Editor swaps
+**/*.swp
+
+# Environment files
+.env
+.env.*
