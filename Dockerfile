@@ -16,6 +16,9 @@ WORKDIR /app
 COPY pnpm-lock.yaml package.json ./
 RUN pnpm install --frozen-lockfile
 
+# Generate Prisma client
+RUN pnpm prisma generate
+
 # Copy source and build
 COPY . .
 
