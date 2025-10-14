@@ -40,8 +40,7 @@ jobs:
           docker build --build-arg ENVIRONMENT=dev -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" -t "$ECR_REGISTRY/$ECR_REPOSITORY:latest" .
           docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
           docker push "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
-          echo "✅ ECR push completed"
-          sleep 15  # ECRの反映ラグを吸収する
+
       - name: Force new ECS deployment (uses :latest in task definition)
         env:
           ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}
