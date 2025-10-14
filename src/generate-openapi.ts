@@ -1,7 +1,4 @@
-import { NestFactory } from '@nestjs/core'
-import { AppModule } from './app.module'
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
-import { writeFileSync } from 'fs'
+import { DocumentBuilder } from '@nestjs/swagger'
 
 export const documentConfig = new DocumentBuilder()
   .setTitle('API')
@@ -9,19 +6,4 @@ export const documentConfig = new DocumentBuilder()
   .setVersion('1.0')
   .build()
 
-export const operationIdFactory = (_, methodKey: string) => {
-  return methodKey
-}
-
-async function generateOpenAPISchema() {
-  const app = await NestFactory.create(AppModule)
-
-  const document = SwaggerModule.createDocument(app, documentConfig, {
-    operationIdFactory,
-  })
-
-  writeFileSync('./open-api.json', JSON.stringify(document, null, 2))
-  await app.close()
-}
-
-generateOpenAPISchema()
+export const operationIdFactory = (_: unknown, methodKey: string) => methodKey
