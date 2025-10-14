@@ -37,24 +37,30 @@ jobs:
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
           IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
         run: |
-          docker build --build-arg ENVIRONMENT=dev -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" -t "$ECR_REGISTRY/$ECR_REPOSITORY:latest" .
+          docker build --build-arg ENVIRONMENT=dev -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" .
           docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
 
-      - name: Output image URI
+      - name: Register task def and update service (pinned digest)
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
           IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
-        run: |
-          echo "Image pushed to: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-          echo "Also tagged as: $ECR_REGISTRY/$ECR_REPOSITORY:latest"
-
-      - name: Force new ECS deployment (uses :latest in task definition)
-        env:
           ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}
           ECS_SERVICE: ${{ secrets.ECS_SERVICE }}
         run: |
           set -e
-          aws ecs update-service --cluster "$ECS_CLUSTER" --service "$ECS_SERVICE" --force-new-deployment
+          # 1) ECR からコミット SHA タグのイメージに対応する digest を取得
+          DIGEST=$(aws ecr describe-images --repository-name "$ECR_REPOSITORY" --image-ids imageTag="$IMAGE_TAG" --query 'imageDetails[0].imageDigest' --output text)
+          # 2) digest で固定されたイメージ URI を作成（<registry>/<repo>@<digest>）
+          NEW_IMAGE_URI="$ECR_REGISTRY/$ECR_REPOSITORY@$DIGEST"
+          # 3) 現在サービスが参照するタスク定義 ARN を取得
+          TASK_DEF_ARN=$(aws ecs describe-services --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" --query 'services[0].taskDefinition' --output text)
+          # 4) タスク定義の JSON を取得
+          aws ecs describe-task-definition --task-definition "$TASK_DEF_ARN" --query 'taskDefinition' > taskdef.json
+          # 5) メタ情報を削除し、containerDefinitions[].image を新 URI に差し替え
+          jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities) | .containerDefinitions |= map(.image = env.NEW_IMAGE_URI)' taskdef.json > taskdef.rendered.json
+          # 6) 新しいタスク定義リビジョンを登録
+          NEW_TASK_DEF_ARN=$(aws ecs register-task-definition --cli-input-json file://taskdef.rendered.json --query 'taskDefinition.taskDefinitionArn' --output text)
+          # 7) サービスを新タスク定義に更新し、安定化を待機
+          aws ecs update-service --cluster "$ECS_CLUSTER" --service "$ECS_SERVICE" --task-definition "$NEW_TASK_DEF_ARN"
           aws ecs wait services-stable --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE"
