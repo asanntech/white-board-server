@@ -1,5 +1,11 @@
 import { Injectable } from '@nestjs/common'
-import { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand } from '@aws-sdk/client-s3'
+import {
+  S3Client,
+  PutObjectCommand,
+  ListObjectsV2Command,
+  GetObjectCommand,
+  S3ClientConfig,
+} from '@aws-sdk/client-s3'
 import { DrawingRecord } from './drawing.types'
 
 export interface SnapshotData {
@@ -19,14 +25,20 @@ export class S3Service {
   private readonly bucketName: string
 
   constructor() {
-    this.client = new S3Client({
+    const config: S3ClientConfig = {
       region: process.env.AWS_REGION,
       endpoint: process.env.AWS_S3_ENDPOINT,
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
-      },
-    })
+    }
+
+    // 本番（ECS等）はIAMロールに委譲。ローカルでのみ静的キーが揃っていれば使用する
+    if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+      config.credentials = {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      }
+    }
+
+    this.client = new S3Client(config)
     this.bucketName = process.env.AWS_S3_BUCKET_NAME || 'white-board-snapshots-dev'
   }
 
