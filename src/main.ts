@@ -7,7 +7,10 @@ import { RedisIoAdapter } from './redis-io.adapter'
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
 
-  const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6379'
+  const redisUrl =
+    process.env.REDIS_URL ??
+    `rediss://default:${encodeURIComponent(process.env.REDIS_AUTH_TOKEN!)}@${process.env.REDIS_HOST}:${process.env.REDIS_PORT ?? 6379}`
+
   const redisAdapter = new RedisIoAdapter(app)
   redisAdapter.connectToRedis(redisUrl)
   app.useWebSocketAdapter(redisAdapter)
