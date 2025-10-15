@@ -21,8 +21,8 @@ export class DynamoDBService {
 
   constructor(private readonly s3Service: S3Service) {
     const dynamoClient = new DynamoDBClient({
-      region: process.env.AWS_REGION,
-      endpoint: process.env.AWS_ENDPOINT,
+      region: process.env.AWS_REGION ?? 'local',
+      endpoint: process.env.AWS_ENDPOINT ?? undefined,
     })
 
     this.client = DynamoDBDocumentClient.from(dynamoClient)
