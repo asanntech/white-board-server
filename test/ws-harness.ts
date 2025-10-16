@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import { io, Socket } from 'socket.io-client'
 
-const url = `http://localhost:${process.env.PORT}/white-board`
+const url = `http://localhost:${process.env.PORT}/whiteboard`
 
 const socket: Socket = io(url, {
   transports: ['websocket'],

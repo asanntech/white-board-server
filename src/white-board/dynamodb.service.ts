@@ -17,7 +17,7 @@ export class DynamoDBService {
   private readonly client: DynamoDBDocumentClient
   private readonly tableName: string
   private readonly maxRecordsBeforeSnapshot = 100
-  private readonly maxDataSizeBeforeSnapshot = 3000 // 1MB in bytes
+  private readonly maxDataSizeBeforeSnapshot = 1024 * 1024 // 1MB in bytes
 
   constructor(private readonly s3Service: S3Service) {
     const dynamoClient = new DynamoDBClient({
