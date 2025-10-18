@@ -15,8 +15,13 @@ async function bootstrap() {
   redisAdapter.connectToRedis(redisUrl)
   app.useWebSocketAdapter(redisAdapter)
 
+  const corsOrigins = (process.env.CORS_ORIGINS ?? 'http://localhost:3000')
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0)
+
   app.enableCors({
-    origin: ['http://localhost:3000'],
+    origin: corsOrigins,
     credentials: true,
   })
 
