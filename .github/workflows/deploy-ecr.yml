@@ -42,14 +42,30 @@ jobs:
           docker push "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
 
       - name: Run Prisma migrations on ECS (one-off task)
-        uses: aws-actions/amazon-ecs-run-task@v1
-        with:
-          cluster: ${{ secrets.ECS_CLUSTER }}
-          task-definition: ${{ secrets.MIGRATION_TASK_DEFINITION }}
-          launch-type: FARGATE
-          wait-for-completion: true
-          network-configuration: >-
-            awsvpcConfiguration={subnets=${{ secrets.MIGRATION_SUBNETS }},securityGroups=${{ secrets.MIGRATION_SECURITY_GROUPS }},assignPublicIp=DISABLED}
+        env:
+          ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}
+          MIGRATION_TASK_DEFINITION: ${{ secrets.MIGRATION_TASK_DEFINITION }}
+          MIGRATION_CONTAINER_NAME: ${{ secrets.MIGRATION_CONTAINER_NAME }}
+          SUBNETS: ${{ secrets.MIGRATION_SUBNETS }}
+          SECURITY_GROUPS: ${{ secrets.MIGRATION_SECURITY_GROUPS }}
+        run: |
+          set -euo pipefail
+          TASK_ARN=$(aws ecs run-task \
+            --cluster "$ECS_CLUSTER" \
+            --task-definition "$MIGRATION_TASK_DEFINITION" \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=$SUBNETS,securityGroups=$SECURITY_GROUPS,assignPublicIp=DISABLED}" \
+            --count 1 \
+            --query 'tasks[0].taskArn' --output text)
+
+          aws ecs wait tasks-stopped --cluster "$ECS_CLUSTER" --tasks "$TASK_ARN"
+
+          EXIT_CODE=$(aws ecs describe-tasks \
+            --cluster "$ECS_CLUSTER" \
+            --tasks "$TASK_ARN" \
+            --query 'tasks[0].containers[0].exitCode' --output text)
+          echo "Migration task exit code: $EXIT_CODE"
+          test "$EXIT_CODE" = "0"
 
       - name: Force new ECS deployment (uses :latest in task definition)
         env:
