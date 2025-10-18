@@ -3,8 +3,6 @@
 # ----------
 FROM public.ecr.aws/docker/library/node:22-alpine AS builder
 
-ARG ENVIRONMENT
-
 ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
 RUN corepack enable && corepack prepare pnpm@latest --activate
@@ -21,9 +19,6 @@ RUN pnpm prisma generate
 
 # Copy source and build
 COPY . .
-
-# Create .env from template if provided (e.g., .prod-env.tmpl -> .env)
-RUN if [ -n "$ENVIRONMENT" ] && [ -f .${ENVIRONMENT}-env.tmpl ]; then cp .${ENVIRONMENT}-env.tmpl .env; fi
 
 RUN pnpm build && pnpm prune --prod
 

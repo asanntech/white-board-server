@@ -2,12 +2,13 @@ PORT=4000
 COGNITO_ISSUER=https://cognito-idp.ap-northeast-1.amazonaws.com/ap-northeast-1_hMBZ9jYuM
 SKIP_AUTH=false
 
-# Comma-separated list of allowed CORS origins
-# e.g. http://localhost:3000,https://white-board.yukiasano-dev.com
-CORS_ORIGINS=https://white-board.yukiasano-dev.com
+DATABASE_URL=postgresql://dev:Vp2hPj8Z@localhost:5432/whiteboard?schema=public
 
 DYNAMODB_TABLE_NAME=drawings
 AWS_REGION=ap-northeast-1
+AWS_ENDPOINT=http://localhost:8000
 
 AWS_S3_ENDPOINT=https://s3.ap-northeast-1.amazonaws.com
-AWS_S3_BUCKET_NAME=white-board-snapshots-dev
+AWS_S3_BUCKET_NAME=white-board-snapshots-local
+
+REDIS_URL=redis://localhost:6379
