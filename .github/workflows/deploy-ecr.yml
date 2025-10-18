@@ -50,20 +50,50 @@ jobs:
           SECURITY_GROUPS: ${{ secrets.MIGRATION_SECURITY_GROUPS }}
         run: |
           set -euo pipefail
-          TASK_ARN=$(aws ecs run-task \
+          set -x
+          sudo apt-get update -y && sudo apt-get install -y jq
+
+          # Ensure bracketed array format for ECS CLI
+          SUBNETS_ARG="$SUBNETS"
+          if [[ "${SUBNETS_ARG:0:1}" != "[" ]]; then SUBNETS_ARG="[$SUBNETS_ARG]"; fi
+          SECURITY_GROUPS_ARG="$SECURITY_GROUPS"
+          if [[ "${SECURITY_GROUPS_ARG:0:1}" != "[" ]]; then SECURITY_GROUPS_ARG="[$SECURITY_GROUPS_ARG]"; fi
+
+          # Run task and capture full JSON for diagnostics
+          RUN_JSON=$(aws ecs run-task \
             --cluster "$ECS_CLUSTER" \
             --task-definition "$MIGRATION_TASK_DEFINITION" \
             --launch-type FARGATE \
-            --network-configuration "awsvpcConfiguration={subnets=$SUBNETS,securityGroups=$SECURITY_GROUPS,assignPublicIp=DISABLED}" \
+            --network-configuration "awsvpcConfiguration={subnets=$SUBNETS_ARG,securityGroups=$SECURITY_GROUPS_ARG,assignPublicIp=DISABLED}" \
             --count 1 \
-            --query 'tasks[0].taskArn' --output text)
+            --output json)
+          echo "$RUN_JSON"
+
+          FAILURE_REASON=$(echo "$RUN_JSON" | jq -r '.failures[0].reason // empty')
+          if [[ -n "$FAILURE_REASON" ]]; then
+            echo "run-task failure: $FAILURE_REASON" >&2
+            exit 1
+          fi
+
+          TASK_ARN=$(echo "$RUN_JSON" | jq -r '.tasks[0].taskArn // empty')
+          if [[ -z "$TASK_ARN" ]]; then
+            echo "No taskArn returned from run-task" >&2
+            exit 1
+          fi
 
           aws ecs wait tasks-stopped --cluster "$ECS_CLUSTER" --tasks "$TASK_ARN"
 
-          EXIT_CODE=$(aws ecs describe-tasks \
+          DESC_JSON=$(aws ecs describe-tasks \
             --cluster "$ECS_CLUSTER" \
             --tasks "$TASK_ARN" \
-            --query 'tasks[0].containers[0].exitCode' --output text)
+            --output json)
+          echo "$DESC_JSON"
+
+          STOPPED_REASON=$(echo "$DESC_JSON" | jq -r '.tasks[0].stoppedReason // empty')
+          CONTAINER_REASON=$(echo "$DESC_JSON" | jq -r '.tasks[0].containers[0].reason // empty')
+          EXIT_CODE=$(echo "$DESC_JSON" | jq -r '.tasks[0].containers[0].exitCode')
+          echo "StoppedReason: $STOPPED_REASON"
+          echo "ContainerReason: $CONTAINER_REASON"
           echo "Migration task exit code: $EXIT_CODE"
           test "$EXIT_CODE" = "0"
 
