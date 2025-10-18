@@ -41,6 +41,16 @@ jobs:
           docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
           docker push "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
 
+      - name: Run Prisma migrations on ECS (one-off task)
+        uses: aws-actions/amazon-ecs-run-task@v2
+        with:
+          cluster: ${{ secrets.ECS_CLUSTER }}
+          task-definition: ${{ secrets.MIGRATION_TASK_DEFINITION }}
+          launch-type: FARGATE
+          wait-for-completion: true
+          network-configuration: >-
+            awsvpcConfiguration={subnets=${{ secrets.MIGRATION_SUBNETS }},securityGroups=${{ secrets.MIGRATION_SECURITY_GROUPS }},assignPublicIp=DISABLED}
+
       - name: Force new ECS deployment (uses :latest in task definition)
         env:
           ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}
