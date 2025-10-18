@@ -27,7 +27,8 @@ export class AuthGuard implements CanActivate {
       const request = context.switchToHttp().getRequest<Request>()
       const payload = await this.authService.validateToken(request)
       return !!payload
-    } catch {
+    } catch (error) {
+      console.error('validateHttp', error)
       return false
     }
   }
@@ -47,9 +48,7 @@ export class AuthGuard implements CanActivate {
 
       return true
     } catch (error) {
-      if (error instanceof WsException) {
-        throw error
-      }
+      console.error('validateWebSocket', error)
       throw new WsException('認証に失敗しました')
     }
   }

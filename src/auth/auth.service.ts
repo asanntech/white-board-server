@@ -50,7 +50,8 @@ export class AuthService {
       }
 
       return res
-    } catch {
+    } catch (error) {
+      console.error('verifyToken', error)
       throw new UnauthorizedException('Token verification failed')
     }
   }
