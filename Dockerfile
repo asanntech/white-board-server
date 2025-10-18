@@ -36,6 +36,9 @@ COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 
+# Install CLI tools needed for one-off migration tasks
+RUN npm i -g pnpm@9 prisma@6.14.0
+
 # Expose the Nest.js port (default 4000) for ECS health checks
 EXPOSE 4000
 
