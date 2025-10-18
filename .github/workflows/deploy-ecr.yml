@@ -42,7 +42,7 @@ jobs:
           docker push "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
 
       - name: Run Prisma migrations on ECS (one-off task)
-        uses: aws-actions/amazon-ecs-run-task@v2
+        uses: aws-actions/amazon-ecs-run-task@v1
         with:
           cluster: ${{ secrets.ECS_CLUSTER }}
           task-definition: ${{ secrets.MIGRATION_TASK_DEFINITION }}
