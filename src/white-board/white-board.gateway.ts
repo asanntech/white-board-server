@@ -6,7 +6,12 @@ import { AuthGuard } from '../auth/auth.guard'
 import { DynamoDBService } from './dynamodb.service'
 import { S3Service } from './s3.service'
 
-@WebSocketGateway({ namespace: 'white-board' })
+const wsCorsOrigins = (process.env.CORS_ORIGINS ?? 'http://localhost:3000')
+  .split(',')
+  .map((s) => s.trim())
+  .filter((s) => s.length > 0)
+
+@WebSocketGateway({ namespace: 'white-board', cors: { origin: wsCorsOrigins, credentials: true } })
 @UseGuards(AuthGuard)
 export class WhiteBoardGateway {
   constructor(
