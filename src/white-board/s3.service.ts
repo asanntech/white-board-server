@@ -27,7 +27,7 @@ export class S3Service {
   constructor() {
     const config: S3ClientConfig = {
       region: process.env.AWS_REGION,
-      endpoint: process.env.AWS_S3_ENDPOINT,
+      endpoint: process.env.AWS_S3_ENDPOINT ?? undefined,
     }
 
     // 本番（ECS等）はIAMロールに委譲。ローカルでのみ静的キーが揃っていれば使用する

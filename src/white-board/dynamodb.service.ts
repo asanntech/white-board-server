@@ -105,12 +105,13 @@ export class DynamoDBService {
   }
 
   async saveDrawings(roomId: string, drawings: Drawing[]): Promise<DrawingRecord[]> {
+    console.log('saveDrawings', roomId, drawings)
     // 保存後、レコード数とデータサイズをチェック
     await this.checkAndCreateSnapshot(roomId)
 
     const promises = drawings.map((drawing) => this.saveDrawing(roomId, drawing))
     const savedDrawings = await Promise.all(promises)
-
+    console.log('savedDrawings', savedDrawings)
     return savedDrawings
   }
 
