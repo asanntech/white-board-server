@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, UnauthorizedException, HttpCode } from '@nestjs/common'
+import { Body, Controller, Post, Req, UnauthorizedException, HttpCode, HttpStatus } from '@nestjs/common'
 import { AuthService } from './auth.service'
 import { ApiOperation, ApiTags, ApiOkResponse, ApiUnauthorizedResponse } from '@nestjs/swagger'
 import { Request } from 'express'
@@ -10,7 +10,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('verify')
-  @HttpCode(200)
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Verify Token' })
   @ApiOkResponse({ type: AuthVerifyResponseDto })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
