@@ -18,3 +18,13 @@ export class CreateRoomDto {
   @IsNotEmpty()
   createdBy: string
 }
+
+export class GetRoomCreatorResponseDto {
+  @ApiProperty({
+    description: 'User ID who created the room',
+    example: 'user123',
+  })
+  @IsString()
+  @IsNotEmpty()
+  createdBy: string
+}
