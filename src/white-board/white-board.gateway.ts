@@ -11,7 +11,7 @@ const wsCorsOrigins = (process.env.CORS_ORIGINS ?? 'http://localhost:3000')
   .map((s) => s.trim())
   .filter((s) => s.length > 0)
 
-@WebSocketGateway({ namespace: 'white-board', cors: { origin: wsCorsOrigins, credentials: true } })
+@WebSocketGateway({ cors: { origin: wsCorsOrigins, credentials: true } })
 @UseGuards(AuthGuard)
 export class WhiteBoardGateway {
   constructor(
@@ -46,7 +46,6 @@ export class WhiteBoardGateway {
   async handleDrawing(client: Socket, params: { roomId: string; drawings: Drawing[] }): Promise<void> {
     try {
       client.to(params.roomId).emit('drawing', params.drawings)
-      console.log('handleDrawing', params.roomId, params.drawings)
       await this.dynamoDBService.saveDrawings(params.roomId, params.drawings)
     } catch (error) {
       console.error('Failed to save drawing data to DynamoDB:', error)
