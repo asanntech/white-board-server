@@ -12,6 +12,8 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
+    "start:yjs": "ts-node src/yjs-server/index.ts",
+    "start:yjs:prod": "node dist/yjs-server/index.js",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest --config ./test/jest-unit.json",
     "test:watch": "jest --watch --config ./test/jest-unit.json",
@@ -45,7 +47,10 @@
     "rxjs": "^7.8.1",
     "socket.io": "^4.8.1",
     "swagger-ui-express": "^5.0.1",
-    "uuid": "^13.0.0"
+    "@y/websocket-server": "^0.1.1",
+    "uuid": "^13.0.0",
+    "ws": "^8.18.3",
+    "yjs": "^13.6.28"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -60,6 +65,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.10.7",
     "@types/supertest": "^6.0.2",
+    "@types/ws": "^8.18.1",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",
