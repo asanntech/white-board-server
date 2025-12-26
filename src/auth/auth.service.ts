@@ -1,27 +1,17 @@
 import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common'
 import * as jwt from 'jsonwebtoken'
-import * as jwksClient from 'jwks-rsa'
 import { Request } from 'express'
 import { AuthVerifyResponseDto } from './auth.dto'
 import { UserService } from '../user/user.service'
 import { RoomService } from '../room/room.service'
+import { verifyToken } from '../shared/jwt-verifier'
 
 @Injectable()
 export class AuthService {
-  private client: jwksClient.JwksClient
-
   constructor(
     private readonly userService: UserService,
     private readonly roomService: RoomService
-  ) {
-    this.client = jwksClient({
-      jwksUri: `${process.env.COGNITO_ISSUER}/.well-known/jwks.json`,
-      cache: true,
-      cacheMaxEntries: 10,
-      cacheMaxAge: 60 * 15,
-      timeout: 5000,
-    })
-  }
+  ) {}
 
   extractToken(request: Request): string | null {
     const authHeader = request.headers['authorization']
@@ -30,28 +20,19 @@ export class AuthService {
   }
 
   async verifyToken(token: string): Promise<jwt.JwtPayload> {
-    const decoded = jwt.decode(token, { complete: true })
-
-    if (!decoded || typeof decoded === 'string' || !decoded.header.kid) {
-      throw new BadRequestException('Invalid token format')
-    }
-
     try {
-      const key = await this.client.getSigningKey(decoded.header.kid)
-      const publicKey = key.getPublicKey()
+      return await verifyToken(token)
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'ERR_TOKEN_VERIFICATION_FAILED'
 
-      const res = jwt.verify(token, publicKey, {
-        algorithms: ['RS256'],
-        issuer: process.env.COGNITO_ISSUER,
-      })
+      if (errorMessage === 'ERR_INVALID_TOKEN_FORMAT') {
+        throw new BadRequestException('Invalid token format')
+      }
 
-      if (typeof res === 'string') {
+      if (errorMessage === 'ERR_UNEXPECTED_JWT_PAYLOAD') {
         throw new UnauthorizedException('Unexpected JWT payload type')
       }
 
-      return res
-    } catch (error) {
-      console.error('verifyToken', error)
       throw new UnauthorizedException('Token verification failed')
     }
   }
