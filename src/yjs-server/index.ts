@@ -1,21 +1,19 @@
+import 'dotenv/config'
 import { WebSocketServer, WebSocket } from 'ws'
 import { IncomingMessage } from 'http'
 
-// @y/websocket-server には型定義がないため、手動で定義
-// @ts-expect-error - @y/websocket-server には型定義がない
-import { setupWSConnection } from '@y/websocket-server/utils'
+// CJS のため named import ではなく namespace import を使用
+// @ts-expect-error - @y/websocket-server に型定義なし
+import * as ywsUtils from '@y/websocket-server/utils'
 import { verifyToken } from '../shared/jwt-verifier'
 
-// setupWSConnection の型定義
-declare function setupWSConnection(
-  conn: WebSocket,
-  req: IncomingMessage,
-  options?: { docName?: string }
-): void
+// 型を付けて取り出し
+type SetupWSConnection = (conn: WebSocket, req: IncomingMessage, options?: { docName?: string }) => void
+// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+const setupWSConnection = (ywsUtils as any).setupWSConnection as SetupWSConnection
 
-const port = process.env.YJS_WS_PORT || 1234
-
-const wss = new WebSocketServer({ port: Number(port) })
+const port = Number(process.env.YJS_WS_PORT || 1234)
+const wss = new WebSocketServer({ port })
 
 wss.on('connection', (conn: WebSocket, req: IncomingMessage) => {
   const url = new URL(req.url || '', 'http://localhost')
@@ -26,7 +24,6 @@ wss.on('connection', (conn: WebSocket, req: IncomingMessage) => {
     return
   }
 
-  // 認証チェック
   verifyToken(token)
     .then(() => {
       const roomId = url.pathname.slice(1) || 'default'
