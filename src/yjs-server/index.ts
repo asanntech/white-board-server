@@ -7,8 +7,8 @@ import * as Y from 'yjs'
 // @ts-expect-error - @y/websocket-server に型定義なし
 import * as ywsUtils from '@y/websocket-server/utils'
 import { verifyToken } from '../shared/jwt-verifier'
-import { setupPersistence } from './persistence'
-import { createDynamoDBService } from './services'
+import { loadInitialData, setupPersistence } from './persistence'
+import { createDynamoDBService, createS3Service } from './services'
 
 // 型を付けて取り出し
 type SetupWSConnection = (
@@ -22,17 +22,42 @@ const setupWSConnection = (ywsUtils as any).setupWSConnection as SetupWSConnecti
 const port = Number(process.env.YJS_WS_PORT || 1234)
 const wss = new WebSocketServer({ port })
 const dynamoDBService = createDynamoDBService()
+const s3Service = createS3Service()
 const docs = new Map<string, Y.Doc>()
+const initializingDocs = new Map<string, Promise<Y.Doc>>()
 
-// ドキュメント作成時に永続化をセットアップ
-function getOrCreateDoc(roomId: string): Y.Doc {
-  let doc = docs.get(roomId)
-  if (!doc) {
-    doc = new Y.Doc()
-    setupPersistence(doc, roomId, dynamoDBService)
-    docs.set(roomId, doc)
+// ドキュメント作成時に初期データロードと永続化をセットアップ
+async function getOrCreateDoc(roomId: string): Promise<Y.Doc> {
+  // 既存のドキュメントがあれば返す
+  const existingDoc = docs.get(roomId)
+  if (existingDoc) {
+    return existingDoc
   }
-  return doc
+
+  // 初期化中のドキュメントがあれば待機
+  const initializing = initializingDocs.get(roomId)
+  if (initializing) {
+    return initializing
+  }
+
+  // 新規ドキュメントを作成・初期化
+  const initPromise = (async () => {
+    const doc = new Y.Doc()
+
+    // 既存データをロード
+    await loadInitialData(doc, roomId, dynamoDBService, s3Service)
+
+    // 永続化をセットアップ
+    setupPersistence(doc, roomId, dynamoDBService)
+
+    docs.set(roomId, doc)
+    initializingDocs.delete(roomId)
+
+    return doc
+  })()
+
+  initializingDocs.set(roomId, initPromise)
+  return initPromise
 }
 
 wss.on('connection', (conn: WebSocket, req: IncomingMessage) => {
@@ -45,9 +70,10 @@ wss.on('connection', (conn: WebSocket, req: IncomingMessage) => {
   }
 
   verifyToken(token)
-    .then(() => {
+    .then(async () => {
       const roomId = url.pathname.slice(1) || 'default'
-      const doc = getOrCreateDoc(roomId)
+      // ドキュメントを取得（初期データロード含む）
+      const doc = await getOrCreateDoc(roomId)
       setupWSConnection(conn, req, { doc, docName: roomId })
     })
     .catch(() => {
