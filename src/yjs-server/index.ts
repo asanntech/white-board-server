@@ -9,6 +9,7 @@ import * as ywsUtils from '@y/websocket-server/utils'
 import { verifyToken } from '../shared/jwt-verifier'
 import { loadInitialData, setupPersistence } from './persistence'
 import { createDynamoDBService, createS3Service } from './services'
+import { initYRedis, bindDocToRedis } from './y-redis-provider'
 
 // 型を付けて取り出し
 type SetupWSConnection = (
@@ -20,7 +21,6 @@ type SetupWSConnection = (
 const setupWSConnection = (ywsUtils as any).setupWSConnection as SetupWSConnection
 
 const port = Number(process.env.YJS_WS_PORT || 1234)
-const wss = new WebSocketServer({ port })
 const dynamoDBService = createDynamoDBService()
 const s3Service = createS3Service()
 const docs = new Map<string, Y.Doc>()
@@ -50,6 +50,9 @@ async function getOrCreateDoc(roomId: string): Promise<Y.Doc> {
     // 永続化をセットアップ
     setupPersistence(doc, roomId, dynamoDBService)
 
+    // Redis にバインド（他インスタンスと同期）
+    await bindDocToRedis(doc, roomId)
+
     docs.set(roomId, doc)
     initializingDocs.delete(roomId)
 
@@ -60,25 +63,42 @@ async function getOrCreateDoc(roomId: string): Promise<Y.Doc> {
   return initPromise
 }
 
-wss.on('connection', (conn: WebSocket, req: IncomingMessage) => {
-  const url = new URL(req.url || '', 'http://localhost')
-  const token = url.searchParams.get('token')
-
-  if (!token) {
-    conn.close(4001, 'Unauthorized')
-    return
+// サーバー起動時に Redis を初期化
+async function main() {
+  try {
+    await initYRedis()
+  } catch (error) {
+    console.error('Failed to initialize y-redis, continuing without Redis sync:', error)
+    // Redis 初期化に失敗してもサーバーは起動を続ける
   }
 
-  verifyToken(token)
-    .then(async () => {
-      const roomId = url.pathname.slice(1) || 'default'
-      // ドキュメントを取得（初期データロード含む）
-      const doc = await getOrCreateDoc(roomId)
-      setupWSConnection(conn, req, { doc, docName: roomId })
-    })
-    .catch(() => {
-      conn.close(4001, 'Unauthorized')
-    })
-})
+  const wss = new WebSocketServer({ port })
 
-console.log(`y-websocket server running on port ${port}`)
+  wss.on('connection', (conn: WebSocket, req: IncomingMessage) => {
+    const url = new URL(req.url || '', 'http://localhost')
+    const token = url.searchParams.get('token')
+
+    if (!token) {
+      conn.close(4001, 'Unauthorized')
+      return
+    }
+
+    verifyToken(token)
+      .then(async () => {
+        const roomId = url.pathname.slice(1) || 'default'
+        // ドキュメントを取得（初期データロード含む）
+        const doc = await getOrCreateDoc(roomId)
+        setupWSConnection(conn, req, { doc, docName: roomId })
+      })
+      .catch(() => {
+        conn.close(4001, 'Unauthorized')
+      })
+  })
+
+  console.log(`y-websocket server running on port ${port}`)
+}
+
+main().catch((error) => {
+  console.error('Failed to start y-websocket server:', error)
+  process.exit(1)
+})
