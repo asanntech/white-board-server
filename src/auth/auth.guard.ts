@@ -1,7 +1,5 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common'
-import { WsException } from '@nestjs/websockets'
 import { Request } from 'express'
-import { Socket } from 'socket.io'
 import { AuthService } from './auth.service'
 
 @Injectable()
@@ -15,10 +13,9 @@ export class AuthGuard implements CanActivate {
 
     if (contextType === 'http') {
       return this.validateHttp(context)
-    } else if (contextType === 'ws') {
-      return this.validateWebSocket(context)
     }
 
+    // WebSocket は y-websocket サーバーで別途認証を行うため、ここでは false を返す
     return false
   }
 
@@ -30,26 +27,6 @@ export class AuthGuard implements CanActivate {
     } catch (error) {
       console.error('validateHttp', error)
       return false
-    }
-  }
-
-  private async validateWebSocket(context: ExecutionContext): Promise<boolean> {
-    try {
-      const client: Socket = context.switchToWs().getClient()
-      const auth = client.handshake.auth
-      if (!auth.token) {
-        throw new WsException('認証トークンが提供されていません')
-      }
-
-      const payload = await this.authService.verifyToken(auth.token as string)
-      if (!payload) {
-        throw new WsException('無効な認証トークンです')
-      }
-
-      return true
-    } catch (error) {
-      console.error('validateWebSocket', error)
-      throw new WsException('認証に失敗しました')
     }
   }
 }

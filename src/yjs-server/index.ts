@@ -44,6 +44,11 @@ async function getOrCreateDoc(roomId: string): Promise<Y.Doc> {
   const initPromise = (async () => {
     const doc = new Y.Doc()
 
+    // デバッグ: doc レベルで全ての更新を監視
+    // doc.on('update', (update: Uint8Array, origin: unknown) => {
+    //   console.log(`[${roomId}] Doc updated, origin:`, origin, 'size:', doc.getMap('drawings').size)
+    // })
+
     // 既存データをロード
     await loadInitialData(doc, roomId, dynamoDBService, s3Service)
 

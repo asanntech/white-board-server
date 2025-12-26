@@ -2,18 +2,9 @@ import { NestFactory } from '@nestjs/core'
 import { SwaggerModule } from '@nestjs/swagger'
 import { AppModule } from './app.module'
 import { documentConfig, operationIdFactory } from './generate-openapi'
-import { RedisIoAdapter } from './redis-io.adapter'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
-
-  const redisUrl =
-    process.env.REDIS_URL ??
-    `rediss://default:${encodeURIComponent(process.env.REDIS_AUTH_TOKEN!)}@${process.env.REDIS_HOST}:${process.env.REDIS_PORT ?? 6379}`
-
-  const redisAdapter = new RedisIoAdapter(app)
-  redisAdapter.connectToRedis(redisUrl)
-  app.useWebSocketAdapter(redisAdapter)
 
   const corsOrigins = (process.env.CORS_ORIGINS ?? 'http://localhost:3000')
     .split(',')

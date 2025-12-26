@@ -10,7 +10,12 @@ const DEBOUNCE_MS = 1000
 export function setupPersistence(doc: Y.Doc, roomId: string, dynamoDBService: DynamoDBService): void {
   const yDrawings = doc.getMap<Drawing>('drawings')
 
-  yDrawings.observe(() => {
+  // console.log(yDrawings.get('marker-1760619760900-0.710589058777749'))
+
+  yDrawings.observe((_, transaction) => {
+    // 初期ロード時はスキップ
+    if (transaction.origin === 'initial-load') return
+
     // 既存のタイマーをクリア
     const existingTimer = saveTimers.get(roomId)
     if (existingTimer) {
@@ -60,7 +65,7 @@ export async function loadInitialData(
           yDrawings.set(drawing.id, drawing)
         }
       })
-    })
+    }, 'initial-load')
 
     console.log(`Loaded ${mergedRecords.length} drawings for room ${roomId}`)
   } catch (error) {
