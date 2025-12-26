@@ -1,31 +1,18 @@
 import { AuthService } from './auth.service'
 import * as jwt from 'jsonwebtoken'
-import * as jwksClient from 'jwks-rsa'
 import { UserService } from '@/user/user.service'
 import { PrismaService } from '@/prisma/prisma.service'
 import { RoomService } from '@/room/room.service'
+import { verifyToken } from '../shared/jwt-verifier'
 
-jest.mock('jsonwebtoken')
-jest.mock('jwks-rsa')
+jest.mock('../shared/jwt-verifier')
 
 describe('AuthService', () => {
   let service: AuthService
-  const mockGetSigningKey = jest.fn()
-
-  const decode = jwt.decode as jest.Mock
-  const verify = jwt.verify as jest.Mock
-  const jwksClientMock = jwksClient as unknown as jest.Mock
+  const mockVerifyToken = verifyToken as jest.MockedFunction<typeof verifyToken>
 
   beforeEach(() => {
-    process.env.COGNITO_ISSUER = 'https://example.com'
-
-    // モック戻り値の共通化
-    jwksClientMock.mockReturnValue({
-      getSigningKey: mockGetSigningKey,
-    })
-
     service = new AuthService(new UserService(new PrismaService()), new RoomService(new PrismaService()))
-
     jest.clearAllMocks()
   })
 
@@ -48,29 +35,35 @@ describe('AuthService', () => {
   describe('verifyToken', () => {
     it('should verify a valid token', async () => {
       const mockToken = 'abc.def.ghi'
-      const mockDecoded = { header: { kid: 'mock-kid' } }
-      const mockPayload = { sub: 'user123', email: 'user@example.com' }
+      const mockPayload = { sub: 'user123', email: 'user@example.com' } as jwt.JwtPayload
 
-      decode.mockReturnValue(mockDecoded)
-      mockGetSigningKey.mockResolvedValue({
-        getPublicKey: () => 'mock-public-key',
-      })
-      verify.mockReturnValue(mockPayload)
+      mockVerifyToken.mockResolvedValue(mockPayload)
 
       const payload = await service.verifyToken(mockToken)
 
-      expect(decode).toHaveBeenCalledWith(mockToken, { complete: true })
-      expect(mockGetSigningKey).toHaveBeenCalledWith('mock-kid')
-      expect(verify).toHaveBeenCalledWith(mockToken, 'mock-public-key', {
-        algorithms: ['RS256'],
-        issuer: process.env.COGNITO_ISSUER,
-      })
+      expect(mockVerifyToken).toHaveBeenCalledWith(mockToken)
       expect(payload).toEqual(mockPayload)
     })
 
-    it('should throw error if token is invalid format', async () => {
-      decode.mockReturnValue(null)
+    it('should throw BadRequestException if token is invalid format', async () => {
+      const error = new Error('ERR_INVALID_TOKEN_FORMAT')
+      mockVerifyToken.mockRejectedValue(error)
+
       await expect(service.verifyToken('invalid.token')).rejects.toThrow('Invalid token format')
+    })
+
+    it('should throw UnauthorizedException if token verification fails', async () => {
+      const error = new Error('ERR_TOKEN_VERIFICATION_FAILED')
+      mockVerifyToken.mockRejectedValue(error)
+
+      await expect(service.verifyToken('invalid.token')).rejects.toThrow('Token verification failed')
+    })
+
+    it('should throw UnauthorizedException if unexpected JWT payload type', async () => {
+      const error = new Error('ERR_UNEXPECTED_JWT_PAYLOAD')
+      mockVerifyToken.mockRejectedValue(error)
+
+      await expect(service.verifyToken('invalid.token')).rejects.toThrow('Unexpected JWT payload type')
     })
   })
 })

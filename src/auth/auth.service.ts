@@ -26,8 +26,8 @@ export class AuthService {
       const errorMessage = error instanceof Error ? error.message : 'ERR_TOKEN_VERIFICATION_FAILED'
 
       if (errorMessage === 'ERR_INVALID_TOKEN_FORMAT') {
-      throw new BadRequestException('Invalid token format')
-    }
+        throw new BadRequestException('Invalid token format')
+      }
 
       if (errorMessage === 'ERR_UNEXPECTED_JWT_PAYLOAD') {
         throw new UnauthorizedException('Unexpected JWT payload type')

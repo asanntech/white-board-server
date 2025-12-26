@@ -29,8 +29,6 @@ export async function verifyToken(token: string): Promise<jwt.JwtPayload> {
       throw new Error('ERR_UNEXPECTED_JWT_PAYLOAD')
     }
 
-    console.log('res', res)
-
     return res
   } catch (error) {
     if (error instanceof Error && error.message.startsWith('ERR_')) {
