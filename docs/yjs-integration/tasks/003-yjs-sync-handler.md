@@ -23,7 +23,7 @@ async handleYjsSyncRequest(
     const latestSnapshot = await this.s3Service.getLatestSnapshot(params.roomId)
     const existingDrawings = await this.dynamoDBService.getDrawingRecordsByRoom(params.roomId)
     const allDrawings = this.dynamoDBService.mergeDrawings(latestSnapshot, existingDrawings)
-    
+
     const drawings = allDrawings.flatMap((drawing) =>
       !drawing.is_deleted ? [this.dynamoDBService.convertFromDynamoDB(drawing)] : []
     )
@@ -61,17 +61,17 @@ async handleYjsSyncRequest(
 
 ### サーバー → クライアント
 
-| イベント名  | ペイロード            | 説明               |
-| ----------- | --------------------- | ------------------ |
-| `yjs:sync`  | `{ state: number[] }` | 初期状態同期レスポンス |
+| イベント名 | ペイロード            | 説明                   |
+| ---------- | --------------------- | ---------------------- |
+| `yjs:sync` | `{ state: number[] }` | 初期状態同期レスポンス |
 
 ## 完了条件
 
-- [ ] `yjs:sync:request` イベントハンドラが実装されている
-- [ ] DB/S3 から既存の Drawing データを取得できる
-- [ ] Drawing[] から Y.Doc を正しく構築できる
-- [ ] バイナリエンコードした state を `yjs:sync` イベントで返せる
-- [ ] Y.Doc が処理後に破棄される（メモリリーク防止）
+- [x] `yjs:sync:request` イベントハンドラが実装されている
+- [x] DB/S3 から既存の Drawing データを取得できる
+- [x] Drawing[] から Y.Doc を正しく構築できる
+- [x] バイナリエンコードした state を `yjs:sync` イベントで返せる
+- [x] Y.Doc が処理後に破棄される（メモリリーク防止）
 
 ## 関連ファイル
 
@@ -85,4 +85,3 @@ async handleYjsSyncRequest(
 - `state` は `Uint8Array` を `number[]` に変換して送信
 - 既存の DB/S3 データ構造（Drawing[]）は変更不要
 - 既存の `join` イベントの `roomData` 送信ロジックを参考にできる
-
