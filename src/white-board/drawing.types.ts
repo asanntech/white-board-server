@@ -12,8 +12,8 @@ export type Drawing = {
   scaleY?: number
   skewX?: number
   skewY?: number
-  lineCap?: string
-  lineJoin?: string
+  lineCap?: 'butt' | 'round' | 'square'
+  lineJoin?: 'round' | 'bevel' | 'miter'
   opacity?: number
 }
 
@@ -38,8 +38,8 @@ export interface DrawingRecord {
   scale_y?: number
   skew_x?: number
   skew_y?: number
-  line_cap?: string
-  line_join?: string
+  line_cap?: 'butt' | 'round' | 'square'
+  line_join?: 'round' | 'bevel' | 'miter'
   opacity?: number
   created_at: string
   updated_at: string

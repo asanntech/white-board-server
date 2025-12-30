@@ -66,10 +66,10 @@ export type UndoRedoResult = {
 
 ## 完了条件
 
-- [ ] `lineCap` の型が `'butt' | 'round' | 'square'` に更新されている
-- [ ] `lineJoin` の型が `'round' | 'bevel' | 'miter'` に更新されている
-- [ ] `pnpm build` が正常に完了する
-- [ ] 型エラーが発生していないこと
+- [x] `lineCap` の型が `'butt' | 'round' | 'square'` に更新されている
+- [x] `lineJoin` の型が `'round' | 'bevel' | 'miter'` に更新されている
+- [x] `pnpm build` が正常に完了する
+- [x] 型エラーが発生していないこと
 
 ## 関連ファイル
 
