@@ -10,14 +10,14 @@ Yjs 導入により不要になった既存の Socket.io イベントハンド�
 
 `src/white-board/white-board.gateway.ts` から以下のハンドラを削除：
 
-| ハンドラ名         | イベント名   | 行数目安    |
-| ------------------ | ------------ | ----------- |
-| `handleDrawing`    | `drawing`    | L45-L53     |
-| `handleDrawingEnd` | `drawingEnd` | L55-L64     |
-| `handleTransform`  | `transform`  | L66-L75     |
-| `handleRemove`     | `remove`     | L77-L85     |
-| `handleUndo`       | `undo`       | L87-L95     |
-| `handleRedo`       | `redo`       | L97-L105    |
+| ハンドラ名         | イベント名   | 行数目安 |
+| ------------------ | ------------ | -------- |
+| `handleDrawing`    | `drawing`    | L45-L53  |
+| `handleDrawingEnd` | `drawingEnd` | L55-L64  |
+| `handleTransform`  | `transform`  | L66-L75  |
+| `handleRemove`     | `remove`     | L77-L85  |
+| `handleUndo`       | `undo`       | L87-L95  |
+| `handleRedo`       | `redo`       | L97-L105 |
 
 ### 2. join イベントの修正
 
@@ -66,14 +66,14 @@ async handleJoin(client: Socket, params: { roomId: string }): Promise<void> {
 
 ## 完了条件
 
-- [ ] `drawing` イベントハンドラが削除されている
-- [ ] `drawingEnd` イベントハンドラが削除されている
-- [ ] `transform` イベントハンドラが削除されている
-- [ ] `remove` イベントハンドラが削除されている
-- [ ] `undo` イベントハンドラが削除されている
-- [ ] `redo` イベントハンドラが削除されている
-- [ ] `join` イベントから `roomData` 送信処理が削除されている
-- [ ] `pnpm build` が正常に完了する
+- [x] `drawing` イベントハンドラが削除されている
+- [x] `drawingEnd` イベントハンドラが削除されている
+- [x] `transform` イベントハンドラが削除されている
+- [x] `remove` イベントハンドラが削除されている
+- [x] `undo` イベントハンドラが削除されている
+- [x] `redo` イベントハンドラが削除されている
+- [x] `join` イベントから `roomData` 送信処理が削除されている
+- [x] `pnpm build` が正常に完了する
 
 ## 関連ファイル
 
@@ -84,4 +84,3 @@ async handleJoin(client: Socket, params: { roomId: string }): Promise<void> {
 - 削除前に新しい Yjs ハンドラ（タスク 002, 003）が実装済みであることを確認
 - 削除後も DynamoDB/S3 サービスは `yjs:sync:request` で使用するため残す
 - `UndoRedoResult` 型は使用されなくなるが、型定義ファイルからの削除は別途検討
-
