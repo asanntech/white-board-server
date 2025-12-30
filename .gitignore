@@ -70,3 +70,5 @@ node_modules
 
 src/prisma/client
 dynamodb
+
+.claude
