@@ -80,4 +80,3 @@ export type UndoRedoResult = {
 - これらの値は HTML Canvas の CanvasRenderingContext2D API の標準値
 - より厳密な型にすることで、不正な値の混入を防げる
 - `DrawingRecord` 型の `line_cap` / `line_join` も同様に更新を検討
-
