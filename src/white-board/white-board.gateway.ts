@@ -42,6 +42,12 @@ export class WhiteBoardGateway {
     client.to(params.roomId).emit('userEntered', client.id)
   }
 
+  @SubscribeMessage('yjs:update')
+  handleYjsUpdate(client: Socket, params: { roomId: string; update: number[] }): void {
+    // 送信元以外の同一ルームクライアントに転送
+    client.to(params.roomId).emit('yjs:update', { update: params.update })
+  }
+
   @SubscribeMessage('drawing')
   async handleDrawing(client: Socket, params: { roomId: string; drawings: Drawing[] }): Promise<void> {
     try {
