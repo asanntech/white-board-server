@@ -7,6 +7,7 @@ import {
   S3ClientConfig,
 } from '@aws-sdk/client-s3'
 import { DrawingRecord } from './drawing.types'
+import { YjsSnapshotData } from './yjs/yjs.types'
 
 export interface SnapshotData {
   roomId: string
@@ -142,6 +143,100 @@ export class S3Service {
       typeof snapshot.timestamp === 'string' &&
       typeof snapshot.drawingsCount === 'number' &&
       Array.isArray(snapshot.drawings)
+    )
+  }
+
+  // ========================================
+  // Yjs用メソッド
+  // ========================================
+
+  /**
+   * YjsスナップショットをS3に保存
+   * @param roomId ルームID
+   * @param data スナップショットデータ
+   */
+  async saveYjsSnapshot(roomId: string, data: YjsSnapshotData): Promise<void> {
+    const key = `${roomId}/${data.timestamp}.json`
+
+    await this.client.send(
+      new PutObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+        Body: JSON.stringify(data),
+        ContentType: 'application/json',
+        Metadata: {
+          roomId,
+          timestamp: data.timestamp,
+        },
+      })
+    )
+
+    console.log(`Snapshot saved to S3: ${key}`)
+  }
+
+  /**
+   * S3から最新のYjsスナップショットを取得
+   * @param roomId ルームID
+   * @returns スナップショットデータ（存在しない場合はnull）
+   */
+  async getLatestYjsSnapshot(roomId: string): Promise<YjsSnapshotData | null> {
+    try {
+      const listResponse = await this.client.send(
+        new ListObjectsV2Command({
+          Bucket: this.bucketName,
+          Prefix: `${roomId}/`,
+          MaxKeys: 100,
+        })
+      )
+
+      if (!listResponse.Contents || listResponse.Contents.length === 0) {
+        return null
+      }
+
+      // 最新のオブジェクトを取得
+      const latestObject = listResponse.Contents.reduce((max, current) => {
+        if (!max.LastModified || !current.LastModified) return max
+        return new Date(max.LastModified).getTime() > new Date(current.LastModified).getTime() ? max : current
+      }, listResponse.Contents[0])
+
+      const getResponse = await this.client.send(
+        new GetObjectCommand({
+          Bucket: this.bucketName,
+          Key: latestObject.Key,
+        })
+      )
+
+      const bodyString = await getResponse.Body?.transformToString()
+      if (!bodyString) return null
+
+      const parsedData: unknown = JSON.parse(bodyString)
+
+      if (!this.isValidYjsSnapshotData(parsedData)) {
+        console.error(`Invalid snapshot data structure for ${latestObject.Key}`)
+        return null
+      }
+
+      return parsedData
+    } catch (error) {
+      console.error(`Failed to get latest snapshot for room ${roomId}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Yjsスナップショットデータの型ガード
+   */
+  private isValidYjsSnapshotData(data: unknown): data is YjsSnapshotData {
+    if (typeof data !== 'object' || data === null) {
+      return false
+    }
+
+    const snapshot = data as Record<string, unknown>
+
+    return (
+      typeof snapshot.roomId === 'string' &&
+      typeof snapshot.timestamp === 'string' &&
+      typeof snapshot.fullState === 'string'
     )
   }
 }
