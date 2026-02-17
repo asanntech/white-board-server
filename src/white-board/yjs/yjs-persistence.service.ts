@@ -76,10 +76,7 @@ export class YjsPersistenceService {
   private async checkAndCreateSnapshot(roomId: string): Promise<void> {
     const stats = await this.dynamoDBService.getYjsUpdatesStats(roomId)
 
-    if (
-      stats.count >= this.maxUpdatesBeforeSnapshot ||
-      stats.totalSize >= this.maxUpdateSizeBeforeSnapshot
-    ) {
+    if (stats.count >= this.maxUpdatesBeforeSnapshot || stats.totalSize >= this.maxUpdateSizeBeforeSnapshot) {
       await this.createSnapshot(roomId)
     }
   }

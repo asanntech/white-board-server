@@ -1,5 +1,11 @@
 import { Injectable } from '@nestjs/common'
-import { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand, S3ClientConfig } from '@aws-sdk/client-s3'
+import {
+  S3Client,
+  PutObjectCommand,
+  ListObjectsV2Command,
+  GetObjectCommand,
+  S3ClientConfig,
+} from '@aws-sdk/client-s3'
 import { YjsSnapshotData } from './yjs/yjs.types'
 
 @Injectable()

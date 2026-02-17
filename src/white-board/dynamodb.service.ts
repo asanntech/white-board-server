@@ -1,11 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
-import {
-  DynamoDBDocumentClient,
-  PutCommand,
-  QueryCommand,
-  BatchWriteCommand,
-} from '@aws-sdk/lib-dynamodb'
+import { DynamoDBDocumentClient, PutCommand, QueryCommand, BatchWriteCommand } from '@aws-sdk/lib-dynamodb'
 import { v4 as uuid } from 'uuid'
 import { YjsUpdateRecord } from './yjs/yjs.types'
 
