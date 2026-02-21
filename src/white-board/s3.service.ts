@@ -6,18 +6,7 @@ import {
   GetObjectCommand,
   S3ClientConfig,
 } from '@aws-sdk/client-s3'
-import { DrawingRecord } from './drawing.types'
-
-export interface SnapshotData {
-  roomId: string
-  timestamp: string
-  drawingsCount: number
-  drawings: DrawingRecord[]
-}
-
-export interface SnapshotWithKey extends SnapshotData {
-  s3Key: string
-}
+import { YjsSnapshotData } from './yjs/yjs.types'
 
 @Injectable()
 export class S3Service {
@@ -43,32 +32,22 @@ export class S3Service {
   }
 
   /**
-   * S3にスナップショットを保存
+   * スナップショットをS3に保存
    * @param roomId ルームID
-   * @param drawings 描画データの配列
-   * @returns S3のキー
+   * @param data スナップショットデータ
    */
-  async saveSnapshot(roomId: string, drawingRecords: DrawingRecord[]): Promise<void> {
-    const timestamp = new Date().toISOString()
-    const key = `${roomId}/${timestamp}.json`
-
-    const snapshotData = {
-      roomId,
-      timestamp,
-      drawingsCount: drawingRecords.length,
-      drawings: drawingRecords,
-    }
+  async saveYjsSnapshot(roomId: string, data: YjsSnapshotData): Promise<void> {
+    const key = `${roomId}/${data.timestamp}.json`
 
     await this.client.send(
       new PutObjectCommand({
         Bucket: this.bucketName,
         Key: key,
-        Body: JSON.stringify(snapshotData, null, 2),
+        Body: JSON.stringify(data),
         ContentType: 'application/json',
         Metadata: {
           roomId,
-          timestamp,
-          drawingsCount: drawingRecords.length.toString(),
+          timestamp: data.timestamp,
         },
       })
     )
@@ -77,11 +56,11 @@ export class S3Service {
   }
 
   /**
-   * S3から対象room_idの最新スナップショットを取得
+   * S3から最新のスナップショットを取得
    * @param roomId ルームID
-   * @returns スナップショットデータ
+   * @returns スナップショットデータ（存在しない場合はnull）
    */
-  async getLatestSnapshot(roomId: string): Promise<DrawingRecord[]> {
+  async getLatestYjsSnapshot(roomId: string): Promise<YjsSnapshotData | null> {
     try {
       const listResponse = await this.client.send(
         new ListObjectsV2Command({
@@ -91,8 +70,9 @@ export class S3Service {
         })
       )
 
-      // オブジェクトが存在しない場合
-      if (!listResponse.Contents || listResponse.Contents.length === 0) return []
+      if (!listResponse.Contents || listResponse.Contents.length === 0) {
+        return null
+      }
 
       // 最新のオブジェクトを取得
       const latestObject = listResponse.Contents.reduce((max, current) => {
@@ -107,30 +87,27 @@ export class S3Service {
         })
       )
 
-      // ストリームをテキストに変換
       const bodyString = await getResponse.Body?.transformToString()
-      if (!bodyString) return []
+      if (!bodyString) return null
 
-      // JSONをパース
       const parsedData: unknown = JSON.parse(bodyString)
 
-      // 型検証
-      if (!this.isValidSnapshotData(parsedData)) {
+      if (!this.isValidYjsSnapshotData(parsedData)) {
         console.error(`Invalid snapshot data structure for ${latestObject.Key}`)
-        return []
+        return null
       }
 
-      return parsedData.drawings
+      return parsedData
     } catch (error) {
       console.error(`Failed to get latest snapshot for room ${roomId}:`, error)
-      throw error
+      return null
     }
   }
 
   /**
    * スナップショットデータの型ガード
    */
-  private isValidSnapshotData(data: unknown): data is SnapshotData {
+  private isValidYjsSnapshotData(data: unknown): data is YjsSnapshotData {
     if (typeof data !== 'object' || data === null) {
       return false
     }
@@ -140,8 +117,7 @@ export class S3Service {
     return (
       typeof snapshot.roomId === 'string' &&
       typeof snapshot.timestamp === 'string' &&
-      typeof snapshot.drawingsCount === 'number' &&
-      Array.isArray(snapshot.drawings)
+      typeof snapshot.fullState === 'string'
     )
   }
 }
