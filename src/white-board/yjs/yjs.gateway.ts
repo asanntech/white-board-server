@@ -2,6 +2,7 @@ import { UseGuards } from '@nestjs/common'
 import {
   OnGatewayConnection,
   OnGatewayDisconnect,
+  OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
@@ -12,6 +13,9 @@ import { AuthGuard } from '../../auth/auth.guard'
 import { YjsRoomManager } from './yjs-room.manager'
 import { YjsPersistenceService } from './yjs-persistence.service'
 import { YjsJoinParams, YjsUpdateParams, YjsSyncInitPayload } from './yjs.types'
+
+/** サーバー間 Y.Doc 同期用イベント名 */
+const SERVER_YJS_SYNC_EVENT = 'server:yjs-sync'
 
 const wsCorsOrigins = (process.env.CORS_ORIGINS ?? 'http://localhost:3000')
   .split(',')
@@ -27,7 +31,7 @@ const wsCorsOrigins = (process.env.CORS_ORIGINS ?? 'http://localhost:3000')
  */
 @WebSocketGateway({ cors: { origin: wsCorsOrigins, credentials: true } })
 @UseGuards(AuthGuard)
-export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit {
   @WebSocketServer()
   server: Server
 
@@ -38,6 +42,22 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly yjsRoomManager: YjsRoomManager,
     private readonly yjsPersistenceService: YjsPersistenceService
   ) {}
+
+  /**
+   * Gateway初期化時に serverSideEmit リスナーを設定
+   * 他インスタンスからの Y.Doc 更新を受信して適用
+   */
+  afterInit(server: Server): void {
+    server.on(SERVER_YJS_SYNC_EVENT, (roomId: string, update: string) => {
+      const doc = this.yjsRoomManager.getDoc(roomId)
+      if (doc) {
+        const updateData = Buffer.from(update, 'base64')
+        Y.applyUpdate(doc, updateData)
+        console.log(`Applied Y.Doc update from other instance for room ${roomId}`)
+      }
+    })
+    console.log('YjsGateway initialized with server-side sync listener')
+  }
 
   handleConnection(client: Socket): void {
     console.log(`Client connected: ${client.id}`)
@@ -95,7 +115,8 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
    *
    * 1. 更新をY.Docに適用
    * 2. 他のクライアントにブロードキャスト
-   * 3. DynamoDBに永続化
+   * 3. 他インスタンスのY.Docに同期（serverSideEmit）
+   * 4. DynamoDBに永続化
    */
   @SubscribeMessage('yjs-update')
   async handleYjsUpdate(client: Socket, params: YjsUpdateParams): Promise<void> {
@@ -113,6 +134,9 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       // 他のクライアントにブロードキャスト
       client.to(roomId).emit('yjs-update', params)
+
+      // 他インスタンスのY.Docに同期（Redis経由）
+      this.server.serverSideEmit(SERVER_YJS_SYNC_EVENT, roomId, update)
 
       // DynamoDBに永続化
       await this.yjsPersistenceService.saveUpdate(roomId, updateData)
